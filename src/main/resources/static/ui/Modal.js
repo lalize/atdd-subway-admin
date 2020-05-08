@@ -1,10 +1,13 @@
 import { EVENT_TYPE } from "../utils/constants.js";
+import EventEmitter from "../utils/eventEmitter.js";
 
 export default function Modal() {
   const $openModalButton = document.querySelector(".modal-open");
   const $closeModalButton = document.querySelector(".modal-close");
   const $body = document.querySelector("body");
   const $modal = document.querySelector(".modal");
+
+  const eventBus = EventEmitter();
 
   const toggle = event => {
     if (event) {
@@ -15,10 +18,17 @@ export default function Modal() {
     $modal.classList.toggle("pointer-events-none");
   };
 
-  $openModalButton.addEventListener(EVENT_TYPE.CLICK, toggle);
-  $closeModalButton.addEventListener(EVENT_TYPE.CLICK, toggle);
+  $openModalButton.addEventListener(EVENT_TYPE.CLICK, event => {
+    toggle(event);
+    eventBus.emit("open");
+  });
+  $closeModalButton.addEventListener(EVENT_TYPE.CLICK, event => {
+    toggle(event);
+    eventBus.emit("close");
+  });
 
   return {
-    toggle
+    toggle,
+    ...eventBus
   };
 }

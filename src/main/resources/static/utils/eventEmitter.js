@@ -2,21 +2,27 @@ const EventEmitter = () => {
   const events = new Map();
 
   const on = (type, listener) => {
-      const event = events.get(type);
-      if (event) {
+    const event = events.get(type);
+    if (event) {
       event.push(listener);
       return;
-      }
-      events.set(type, [listener]);
+    }
+    events.set(type, [listener]);
   };
 
   const emit = (type, data) => {
-      events.get(type).map(listener => listener(data));
+    const event = events.get(type);
+    if (event) {
+      event.map(listener => listener(data));
+    }
   };
 
+  const clear = () => events.clear();
+
   return {
-      on,
-      emit
+    on,
+    emit,
+    clear
   };
 }
 

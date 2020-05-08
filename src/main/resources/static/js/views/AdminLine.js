@@ -6,23 +6,26 @@ import api from "../../api/index.js";
 function AdminLine() {
   const $subwayLineList = document.querySelector("#subway-line-list");
   const $linesInfo = document.querySelector(".lines-info");
-  
-  const subwayLineModal = new CreateSubWayLineModal();  
 
-  const onCreateSubwayLine = async data => {
-    const { id } = await api.line.create(data);
-    if (!id) {
-      alert(ERROR_MESSAGE.NOT_EXIST);
-      return;
-    }
-    $subwayLineList.insertAdjacentHTML(
-      "beforeend",
-      subwayLinesTemplate({
-        id,
-        ...data
-      })
-    );
-    subwayLineModal.toggle();
+  const subwayLineModal = new CreateSubWayLineModal();
+
+  const onCreateSubwayLine = async () => {
+    subwayLineModal.wait().then(async data => {
+      const { id } = await api.line.create(data);
+      if (!id) {
+        alert(ERROR_MESSAGE.NOT_EXIST);
+        return Promise.resolve(true);
+      }
+      $subwayLineList.insertAdjacentHTML(
+        "beforeend",
+        subwayLinesTemplate({
+          id,
+          ...data
+        })
+      );
+      subwayLineModal.toggle();
+      return Promise.resolve(false);
+    });
   };
 
   const onDeleteSubwayLine = event => {
@@ -33,11 +36,29 @@ function AdminLine() {
     }
   };
 
-  const onUpdateSubwayLine = event => {
+  const onUpdateSubwayLine = async event => {
     const $target = event.target;
     const isUpdateButton = $target.classList.contains("mdi-pencil");
     if (isUpdateButton) {
+      const $subwayLineItem = $target.closest(".subway-line-item");
+      const line = await api.line.get($subwayLineItem.dataset.lineId);
       subwayLineModal.toggle();
+      subwayLineModal.setData(line);
+      subwayLineModal.wait().then(async data => {
+        const { ok } = await api.line.update(data, line.id);
+        if (!ok) {
+          alert(ERROR_MESSAGE.NOT_EXIST);
+          return;
+        }
+        const $newSubwayLineParent = document.createElement("div");
+        $newSubwayLineParent.innerHTML = subwayLinesTemplate({
+          id: line.id,
+          ...data
+        });
+        $subwayLineList.insertBefore($newSubwayLineParent.firstElementChild, $subwayLineItem);
+        $subwayLineItem.remove();
+        subwayLineModal.toggle();
+      });
     }
   };
 
@@ -48,11 +69,6 @@ function AdminLine() {
       const line = await api.line.get($target.dataset.lineId);
       $linesInfo.innerHTML = detailSubwayLineTemplate(line);
     }
-  }
-
-  const onEditSubwayLine = event => {
-    const $target = event.target;
-    const isDeleteButton = $target.classList.contains("mdi-pencil");
   };
 
   const initDefaultSubwayLines = async () => {
@@ -69,7 +85,7 @@ function AdminLine() {
     $subwayLineList.addEventListener(EVENT_TYPE.CLICK, onDeleteSubwayLine);
     $subwayLineList.addEventListener(EVENT_TYPE.CLICK, onUpdateSubwayLine);
     $subwayLineList.addEventListener(EVENT_TYPE.CLICK, onSelectSubwayLine);
-    subwayLineModal.on('submit', onCreateSubwayLine);
+    subwayLineModal.on("open", onCreateSubwayLine);
   };
 
   this.init = () => {

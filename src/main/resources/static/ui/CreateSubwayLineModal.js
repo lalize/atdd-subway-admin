@@ -15,9 +15,9 @@ function CreateSubwayLineModal() {
     "#subway-line-create-form #submit-button"
   );
 
-  const subwayLineModal = new Modal();
-
   const eventBus = EventEmitter();
+
+  const subwayLineModal = new Modal();
 
   const validate = () => {
     if (!$subwayLineNameInput.value) {
@@ -55,10 +55,15 @@ function CreateSubwayLineModal() {
     };
   }
 
-  const toggle = () => {
-    clear();
-    subwayLineModal.toggle();
+  const setData = data => {
+    $subwayLineNameInput.value = data.name;
+    $subwayLineColorInput.value = data.color;
+    $subwayLineFirstTimeInput.value = data.startTime;
+    $subwayLineLastTimeInput.value = data.endTime;
+    $subwayLineIntervalTimeInput.value = data.intervalTime;
   }
+
+  const toggle = () => subwayLineModal.toggle();
 
   const onSelectColorHandler = event => {
     event.preventDefault();
@@ -68,6 +73,24 @@ function CreateSubwayLineModal() {
         $target.dataset.color;
     }
   };
+
+  const promise = () => {
+    eventBus.clear();
+    return new Promise(resolve => {
+      eventBus.on("submit", resolve);
+    });
+  };
+
+  const wait = async () => {
+    return new Promise(async resolve => {
+      while (true) {
+        const data = await promise()
+        if (data) {
+          return resolve(data);
+        }
+      }
+    });
+  }
 
   const initCreateSubwayLineForm = () => {
     const $colorSelectContainer = document.querySelector(
@@ -84,6 +107,7 @@ function CreateSubwayLineModal() {
   };
 
   const initEventListeners = () => {
+    subwayLineModal.on("close", () => eventBus.emit("close"));
     $createSubwayLineButton.addEventListener(EVENT_TYPE.CLICK, event => {
       event.preventDefault();
       try {
@@ -104,8 +128,10 @@ function CreateSubwayLineModal() {
   return {
     init,
     json,
+    setData,
     toggle,
-    ...eventBus
+    wait,
+    on: subwayLineModal.on
   };
 }
 
